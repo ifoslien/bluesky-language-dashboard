@@ -11,19 +11,30 @@ The main question is how well the language a user declares matches the language 
 - Which languages get confused with which (for example Ukrainian posts tagged as Russian)
 - Mixed Cyrillic and Latin script, which can signal transliteration or code-switching
 - Post length, type-token ratio, emoji use and link sharing per language
-- Top hashtags per language in each sample
+- How a language's tag accuracy changes over time
 
 ## How it works
 
-`collector.py` connects to Jetstream, keeps newly created posts and stops after five minutes or 5,000 posts. `analysis.py` cleans each post (removing links, mentions, hashtags and emoji), detects its language with [lingua](https://github.com/pemistahl/lingua-py) and computes text features. The results are grouped by declared language and appended to three CSV files.
+`collector.py` connects to Jetstream, keeps newly created posts and stops after five minutes or 5,000 posts. `analysis.py` cleans each post (removing links, mentions, hashtags and emoji), detects its language with [lingua](https://github.com/pemistahl/lingua-py) and computes text features. The results are grouped by declared language and appended to two CSV files.
 
 | File | One row per |
 | --- | --- |
 | `language_summary.csv` | language per sample |
 | `language_pairs.csv` | declared and detected language pair per sample |
-| `hashtags.csv` | top hashtag per language per sample |
 
-Only aggregate statistics and hashtags are stored. No post text or account identifiers are saved.
+Only aggregate statistics are stored. No post text or account identifiers are saved.
+
+## The dashboard
+
+`dashboard.py` is a Dash app built on the two CSV files. It shows
+
+- each language's share of posts over time
+- how often each language tag matches the detected language
+- a heatmap of declared tags against detected languages
+- a focus view for one language, with where its posts end up and how its tag accuracy changes over time
+- a sortable table of text statistics per language
+
+Filters for the time window and languages sit above the charts. The app reloads the data every 15 minutes.
 
 ## Running it locally
 
@@ -33,6 +44,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 python test_offline.py
 python collector.py --seconds 60
+python dashboard.py
+```
+
+Then open http://127.0.0.1:8050 in a browser. To view the latest data from GitHub without pulling first, set `DATA_BASE_URL` to the raw file location before starting the app.
+
+```bash
+export DATA_BASE_URL=https://raw.githubusercontent.com/USERNAME/bluesky-language-dashboard/main/
+python dashboard.py
 ```
 
 `test_offline.py` checks the parsing and analysis code on sample posts without connecting to Bluesky.

@@ -4,6 +4,7 @@ The collector imports these functions to annotate each post and then
 summarize a sample. The dashboard will import them later too.
 """
 
+import html
 import re
 from collections import Counter
 
@@ -44,6 +45,7 @@ MIN_CONFIDENCE = 0.5
 URL_PATTERN = re.compile(r"https?://\S+|www\.\S+")
 MENTION_PATTERN = re.compile(r"@[\w.\-]+")
 HASHTAG_PATTERN = re.compile(r"#\w+")
+
 EMOJI_PATTERN = re.compile(
     "[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF]"
 )
@@ -111,6 +113,7 @@ def script_mix(text):
 
 def annotate_post(text, langs):
     """Return a dictionary of features for one post."""
+    text = html.unescape(text)
     declared_tags = [normalize_tag(t) for t in (langs or [])]
     declared = declared_tags[0] if declared_tags else "none"
     detected, confidence = detect_language(text)
@@ -126,7 +129,6 @@ def annotate_post(text, langs):
         "tokens": tokens,
         "emoji": len(EMOJI_PATTERN.findall(text)),
         "has_url": bool(URL_PATTERN.search(text)),
-        "hashtags": [h.lower() for h in HASHTAG_PATTERN.findall(text)],
         "script": script_mix(text),
     }
 
@@ -134,8 +136,8 @@ def annotate_post(text, langs):
 def summarize(posts, run_time, min_posts=20):
     """Collapse annotated posts into per-language summary rows.
 
-    Returns three lists of dictionaries that become rows in
-    language_summary.csv, language_pairs.csv and hashtags.csv.
+    Returns two lists of dictionaries that become rows in
+    language_summary.csv and language_pairs.csv.
     Languages with fewer than min_posts posts are grouped as 'other'
     so the summary only keeps languages with enough data to compare.
     """
@@ -178,12 +180,4 @@ def summarize(posts, run_time, min_posts=20):
         for (d, t), n in sorted(pair_counts.items())
     ]
 
-    hashtag_rows = []
-    for lang, group in sorted(groups.items()):
-        tag_counts = Counter(h for p in group for h in p["hashtags"])
-        for tag, n in tag_counts.most_common(10):
-            hashtag_rows.append(
-                {"run_time": run_time, "declared": lang, "hashtag": tag, "count": n}
-            )
-
-    return summary_rows, pair_rows, hashtag_rows
+    return summary_rows, pair_rows

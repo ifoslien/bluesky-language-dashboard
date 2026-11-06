@@ -44,6 +44,7 @@ samples = [
     ("Working on my thesis tonight, wish me luck with the data", []),
 ]
 
+samples.append(("It&#8217;s a lovely day for a walk in the park", ["en"]))
 messages = [fake_message(t, l) for t, l in samples]
 messages.append(fake_message("a like, not a post", ["en"], collection="app.bsky.feed.like"))
 messages.append(fake_message("deleted post", ["en"], operation="delete"))
@@ -51,6 +52,7 @@ messages.append(json.dumps({"kind": "identity", "did": "did:plc:example"}))
 
 parsed = [p for p in (parse_event(m) for m in messages) if p]
 assert len(parsed) == len(samples), "non-post events should be skipped"
+assert "&#8217;" not in " ".join(annotate_post("It&#8217;s a lovely day", ["en"])["tokens"])
 print(f"Parsed {len(parsed)} of {len(messages)} messages\n")
 
 annotated = [annotate_post(p["text"], p["langs"]) for p in parsed]
@@ -58,7 +60,7 @@ for (text, _), a in zip(samples, annotated):
     print(f"declared {a['declared']:>4}  detected {a['detected']:>4}  "
           f"script {a['script']:>8}  {text[:45]}")
 
-summary, pairs, hashtags = summarize(annotated, "2026-11-05T12:00:00Z", min_posts=1)
+summary, pairs = summarize(annotated, "2026-11-05T12:00:00Z", min_posts=1)
 
 print("\nSummary rows")
 for row in summary:
@@ -68,6 +70,3 @@ print("\nDeclared vs detected pairs")
 for row in pairs:
     print(row)
 
-print("\nHashtags")
-for row in hashtags:
-    print(row)

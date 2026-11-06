@@ -5,8 +5,8 @@ Run it with
 or change the sample length with
     python collector.py --seconds 120 --max-posts 2000
 
-Each run appends rows to three CSV files. Only aggregate statistics and
-hashtags are saved, never post text or account IDs, so the data files
+Each run appends rows to two CSV files. Only aggregate statistics
+are saved, never post text or account IDs, so the data files
 are safe to commit to a public repository.
 """
 
@@ -32,7 +32,6 @@ JETSTREAM_HOSTS = [
 
 SUMMARY_FILE = "language_summary.csv"
 PAIRS_FILE = "language_pairs.csv"
-HASHTAGS_FILE = "hashtags.csv"
 
 
 def parse_event(message):
@@ -107,10 +106,9 @@ def main():
     annotated = [annotate_post(p["text"], p["langs"]) for p in raw_posts]
     print(f"Annotated in {time.time() - start:.1f} seconds")
 
-    summary_rows, pair_rows, hashtag_rows = summarize(annotated, run_time)
+    summary_rows, pair_rows = summarize(annotated, run_time)
     append_rows(summary_rows, SUMMARY_FILE)
     append_rows(pair_rows, PAIRS_FILE)
-    append_rows(hashtag_rows, HASHTAGS_FILE)
 
     print("\nPosts by declared language")
     for row in sorted(summary_rows, key=lambda r: -r["posts"]):
